@@ -1,0 +1,90 @@
+buildscript {
+    ext.kotlin_version = '1.1.2-2'
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'com.jfrog.bintray' version '1.7.2'
+    id 'net.researchgate.release' version '2.4.1'
+    id 'maven'
+}
+apply plugin: 'kotlin'
+
+group 'net.dinomite'
+version project.version
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+    api 'com.google.guava:guava:22.0'
+    api "redis.clients:jedis:2.9.0"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation 'org.slf4j:slf4j-simple:1.7.24'
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.orange.redis-embedded:embedded-redis:0.6'
+}
+
+task sourceJar(type: Jar, dependsOn: classes) {
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    from javadoc.destinationDir
+}
+
+publishing {
+    publications {
+        bintray(MavenPublication) {
+            from components.java
+            groupId project.group
+            artifactId project.name
+            version project.version
+
+            artifact sourceJar {
+                classifier 'sources'
+            }
+
+            artifact javadocJar {
+                classifier 'javadoc'
+            }
+        }
+    }
+}
+
+release {
+    tagTemplate = 'v$version'
+    afterReleaseBuild.dependsOn bintrayUpload
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    publications = ['bintray']
+
+    pkg {
+        repo = 'maven'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/dinomite/cache-jvm'
+        name = 'net.dinomite:cache'
+
+        version {
+            name = project.version
+            released = new Date()
+            vcsTag = 'v' + project.version
+        }
+    }
+}
