@@ -1,7 +1,11 @@
 # guava-cache-redis
 
-description
+A [Guava LoadingCache](https://github.com/google/guava/wiki/CachesExplained) backed by Redis.
+
+# Usage
+
+
 
 # See also
 
-https://github.com/levyfan/guava-cache-redis
+[Very similar in Java](https://github.com/levyfan/guava-cache-redis)
