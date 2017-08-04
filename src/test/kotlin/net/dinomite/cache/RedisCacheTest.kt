@@ -7,7 +7,6 @@ import org.junit.Before
 import org.junit.Test
 import redis.clients.jedis.JedisPool
 import redis.embedded.RedisServer
-import sun.plugin.dom.exception.InvalidStateException
 import java.util.*
 
 class RedisCacheTest {
@@ -144,8 +143,8 @@ class RedisCacheTest {
     fun testGet_ThrowsExceptionForMissingLoader() {
         try {
             redisCache.get("foobar")
-            fail("Expected InvalidStateException")
-        } catch (e: InvalidStateException) {
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
             // Expected
         }
     }
@@ -154,8 +153,8 @@ class RedisCacheTest {
     fun testRefresh_ThrowsExceptionForMissingLoader() {
         try {
             redisCache.refresh("foobar")
-            fail("Expected InvalidStateException")
-        } catch (e: InvalidStateException) {
+            fail("Expected IllegalStateException")
+        } catch (e: IllegalStateException) {
             // Expected
         }
     }

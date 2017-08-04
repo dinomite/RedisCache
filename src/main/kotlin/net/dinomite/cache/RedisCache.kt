@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.google.common.primitives.Bytes
 import redis.clients.jedis.JedisPool
-import sun.plugin.dom.exception.InvalidStateException
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.Callable
@@ -127,7 +126,7 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
 
     override fun get(key: K): V {
         if (loader == null) {
-            throw InvalidStateException("Cannot use single-argument get with null loader (provide one Cache construction)")
+            throw IllegalStateException("Cannot use single-argument get with null loader (provide one Cache construction)")
         }
 
         return this.get(key, { loader.load(key) })
@@ -135,7 +134,7 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
 
     override fun refresh(key: K) {
         if (loader == null) {
-            throw InvalidStateException("Cannot refresh wih null loader (provide one Cache construction)")
+            throw IllegalStateException("Cannot refresh wih null loader (provide one Cache construction)")
         }
 
         this.put(key, loader.load(key))
