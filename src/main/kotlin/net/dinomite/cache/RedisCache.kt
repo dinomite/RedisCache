@@ -1,5 +1,6 @@
 package net.dinomite.cache
 
+import com.google.common.annotations.VisibleForTesting
 import com.google.common.cache.AbstractLoadingCache
 import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
@@ -48,7 +49,7 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
         return value
     }
 
-    @Suppress("UNCHECKED_CAST")
+    @Suppress("UNCHECKED_CAST", "Handles generic objects")
     override fun getAllPresent(keys: Iterable<Any?>): ImmutableMap<K, V> {
         val keyBytes = keys.map { buildKey(it) }
 
@@ -83,10 +84,10 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
         }
     }
 
-    @Suppress("IMPLICIT_CAST_TO_ANY")
-    override fun putAll(m: Map<out K, V>) {
+    @Suppress("IMPLICIT_CAST_TO_ANY", "Handles generic objects")
+    override fun putAll(items: Map<out K, V>) {
         val keysAndValues = ArrayList<ByteArray>()
-        m.forEach { key, value ->
+        items.forEach { key, value ->
             keysAndValues.add(buildKey(key))
             keysAndValues.add(valueSerializer.serialize(value))
         }
@@ -95,13 +96,14 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
             if (expiration != null) {
                 jedis.pipelined().use { pipeline ->
                     pipeline.mset(*Iterables.toArray(keysAndValues, ByteArray::class.java))
+
                     var i = 0
                     while (i < keysAndValues.size) {
                         pipeline.expire(keysAndValues[i], expiration)
                         i += 2
                     }
 
-                    pipeline.exec()
+                    pipeline.sync()
                 }
             } else {
                 jedis.mset(*Iterables.toArray(keysAndValues, ByteArray::class.java))
@@ -139,6 +141,7 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
         this.put(key, loader.load(key))
     }
 
+    @VisibleForTesting
     internal fun buildKey(key: Any?): ByteArray {
         if (keyPrefix == null) {
             return keySerializer.serialize(key)

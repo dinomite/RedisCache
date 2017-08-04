@@ -7,10 +7,8 @@ import org.junit.Before
 import org.junit.Test
 import redis.clients.jedis.JedisPool
 import redis.embedded.RedisServer
-import sun.plugin.dom.exception.InvalidStateException
-import java.util.*
 
-class RedisCacheTest {
+class RedisCacheTest_WithLoader {
     val port = 16379
     val redisServer: RedisServer = RedisServer(port)
     val jedisPool = JedisPool("localhost", port)
@@ -21,7 +19,11 @@ class RedisCacheTest {
     fun setup() {
         redisServer.start()
 
-        redisCache = RedisCache(jedisPool)
+        redisCache = RedisCache(jedisPool, loader = object: CacheLoader<String, String>() {
+            override fun load(key: String): String {
+                return "value-for-$key"
+            }
+        })
     }
 
     @After
@@ -30,7 +32,7 @@ class RedisCacheTest {
     }
 
     @Test
-    fun testGetIfPresent_NullForNonExistantKey() {
+    fun testGetIfPresent_NullForNonexistantKey() {
         val key = "foobar"
         assertNull(redisCache.getIfPresent(key))
     }
@@ -59,7 +61,7 @@ class RedisCacheTest {
     }
 
     @Test
-    fun testGet_WithLoader_ExceptionForNullFromValueLoader() {
+    fun testGet_WithLoader_InsertsCustomValue() {
         val key = "foobar"
         try {
             redisCache.get(key, { null })
@@ -141,29 +143,14 @@ class RedisCacheTest {
     }
 
     @Test
-    fun testGet_ThrowsExceptionForMissingLoader() {
-        try {
-            redisCache.get("foobar")
-            fail("Expected InvalidStateException")
-        } catch (e: InvalidStateException) {
-            // Expected
-        }
+    fun testGet_LoadsValueWithLoader() {
+        assertEquals("value-for-foo", redisCache.get("foo"))
     }
 
     @Test
-    fun testRefresh_ThrowsExceptionForMissingLoader() {
-        try {
-            redisCache.refresh("foobar")
-            fail("Expected InvalidStateException")
-        } catch (e: InvalidStateException) {
-            // Expected
-        }
-    }
-
-    @Test
-    fun testBuildKey() {
-        val expected = byteArrayOf(-84, -19, 0, 5, 116, 0, 6, 102, 111, 111, 98, 97, 114)
-        val actual = redisCache.buildKey("foobar")
-        assertTrue(Arrays.equals(expected, actual))
+    fun testRefresh_LoadsValueWithLoader() {
+        redisCache.put("foo", "custom value")
+        redisCache.refresh("foo")
+        assertEquals("value-for-foo", redisCache.get("foo"))
     }
 }
