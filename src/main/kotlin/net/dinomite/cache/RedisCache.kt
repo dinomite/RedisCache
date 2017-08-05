@@ -13,6 +13,13 @@ import java.time.Duration
 import java.util.*
 import java.util.concurrent.Callable
 
+/**
+ * A Redis-backed [LoadingCache](https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/LoadingCache.html)
+ *
+ *     val jedisPool = JedisPool("localhost", 6379)
+ *     val redisCache = RedisCache<String, String>(jedisPool)
+ *     redisCache.put("foo", { generateValue(String) })
+ */
 class RedisCache<K, V>
 @JvmOverloads constructor(val jedisPool: JedisPool,
                           val keySerializer: Serializer = ObjectStreamSerializer(),

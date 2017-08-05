@@ -88,7 +88,6 @@ constructing a different RedisCache instance, and only need to test a subset of 
 
 - Smarter GetAll
 - Transactions for multi-host support?
-- Eviction support from LoadingCache?
 
 # See also
 
