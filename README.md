@@ -91,7 +91,7 @@ constructing a different RedisCache instance, and only need to test a subset of 
 
 # See also
 
-[Very similar in Java](https://github.com/levyfan/guava-cache-redis)
+RedisCache started as a port from [this Java implementation](https://github.com/levyfan/guava-cache-redis)
 
 [1]: The intent is to allow the cached values to be shareable amongst multiple machines, but
 I have yet to actually try that.  Likely some transactions are needed in the RedisCache code.
