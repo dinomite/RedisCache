@@ -7,17 +7,20 @@ import com.google.common.cache.LoadingCache
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.google.common.primitives.Bytes
+import net.dinomite.cache.serializers.ObjectStreamSerializer
+import net.dinomite.cache.serializers.Serializer
 import redis.clients.jedis.JedisPool
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.Callable
 
-class RedisCache<K, V>(val jedisPool: JedisPool,
-                       val keySerializer: Serializer = ObjectStreamSerializer(),
-                       val valueSerializer: Serializer = ObjectStreamSerializer(),
-                       val keyPrefix: ByteArray? = null,
-                       expiration: Duration? = null,
-                       val loader: CacheLoader<K, V>? = null)
+class RedisCache<K, V>
+@JvmOverloads constructor(val jedisPool: JedisPool,
+                          val keySerializer: Serializer = ObjectStreamSerializer(),
+                          val valueSerializer: Serializer = ObjectStreamSerializer(),
+                          val keyPrefix: ByteArray? = null,
+                          expiration: Duration? = null,
+                          val loader: CacheLoader<K, V>? = null)
     : AbstractLoadingCache<K, V>(), LoadingCache<K, V> {
 
     val expiration: Int? = expiration?.seconds?.toInt()
@@ -141,7 +144,7 @@ class RedisCache<K, V>(val jedisPool: JedisPool,
     }
 
     @VisibleForTesting
-    internal fun buildKey(key: Any?): ByteArray {
+    fun buildKey(key: Any?): ByteArray {
         if (keyPrefix == null) {
             return keySerializer.serialize(key)
         } else {

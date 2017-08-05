@@ -1,8 +1,8 @@
 package net.dinomite.cache
 
-import net.dinomite.cache.serializers.Serializer
+import com.google.common.primitives.Bytes
+import net.dinomite.cache.serializers.ObjectStreamSerializer
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -10,46 +10,26 @@ import redis.clients.jedis.JedisPool
 import redis.embedded.RedisServer
 import java.util.*
 
-class RedisCacheTest_WithSerializers {
+class RedisCacheTest_WithPrefix {
     val port = 16379
     val redisServer: RedisServer = RedisServer(port)
     val jedisPool = JedisPool("localhost", port)
 
     lateinit var redisCache: RedisCache<String, String>
-    lateinit var serializer: Serializer
+
+    val prefix = "prefix-"
+    val serializer = ObjectStreamSerializer()
 
     @Before
     fun setup() {
         redisServer.start()
 
-        serializer = object: Serializer {
-            override fun serialize(obj: Any?): ByteArray {
-                with(obj as String) {
-                    return toByteArray()
-                }
-            }
-
-            @Suppress("UNCHECKED_CAST")
-            override fun <T> deserialize(objectData: ByteArray): T {
-                return String(objectData) as T
-            }
-        }
-
-        redisCache = RedisCache(jedisPool, serializer, serializer)
+        redisCache = RedisCache(jedisPool, keyPrefix = prefix.toByteArray())
     }
 
     @After
     fun cleanup() {
         jedisPool.resource.use { it.flushDB() }
-    }
-
-    @Test
-    fun testGet() {
-        val key = "foobar"
-        val value = "foovalue"
-        redisCache.put(key, value)
-
-        assertEquals(value, redisCache.get(key, { value }))
     }
 
     @Test
@@ -59,9 +39,17 @@ class RedisCacheTest_WithSerializers {
         redisCache.put(key, value)
 
         jedisPool.resource.use { jedis ->
-            val serializedKey = serializer.serialize(key)
+            val serializedKey = Bytes.concat(prefix.toByteArray(), serializer.serialize(key))
             val serializedValue = serializer.serialize(value)
             assertTrue(Arrays.equals(serializedValue, jedis.get(serializedKey)))
         }
+    }
+
+    @Test
+    fun testBuildKey_IncludesPrefix() {
+        val key = "foobar"
+        val expected = Bytes.concat(prefix.toByteArray(), serializer.serialize(key))
+        val actual = redisCache.buildKey(key)
+        assertTrue(Arrays.equals(expected, actual))
     }
 }

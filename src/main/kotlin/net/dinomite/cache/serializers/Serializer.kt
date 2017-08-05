@@ -1,4 +1,4 @@
-package net.dinomite.cache
+package net.dinomite.cache.serializers
 
 interface Serializer {
     fun serialize(obj: Any?): ByteArray

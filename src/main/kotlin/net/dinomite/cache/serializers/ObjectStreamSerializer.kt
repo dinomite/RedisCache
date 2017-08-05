@@ -1,4 +1,4 @@
-package net.dinomite.cache
+package net.dinomite.cache.serializers
 
 import java.io.*
 
@@ -6,7 +6,7 @@ import java.io.*
  * Serialize & deserialize objects to byte streams using the JDK's
  * ObjectOutputStream and ObjectInputStream.
  */
-class ObjectStreamSerializer : Serializer {
+open class ObjectStreamSerializer : Serializer {
     override fun serialize(obj: Any?): ByteArray {
         val baos = ByteArrayOutputStream(512)
         try {
