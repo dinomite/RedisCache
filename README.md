@@ -1,6 +1,7 @@
 # guava-cache-redis
 
-A [Guava LoadingCache](https://github.com/google/guava/wiki/CachesExplained) backed by Redis.
+A [Guava LoadingCache](https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/LoadingCache.html)
+backed by Redis.
 
 This project is written in [Kotlin](https://kotlinlang.org/) and the examples in this file also use
 Kotlin syntax.  While different from Java, Kotlin's syntax doesn't stray too far so it should be
@@ -45,7 +46,11 @@ desired.
 
     val redisCache = RedisCache<String, String>(jedisPool, prefix = "page-cache:")
 
-You can also supply an expiration, which will be applied to the values set in Redis.
+By default RedisCache uses the prefix 'redis-cache:'.
+
+RedisCache sets TTL to 1 hour by default—no automatic eviction is performed so **you probably want a
+different value**.  Pass the `expiration` parameter to set the TTL for all RedisCache-inserted
+objects.
 
 ## Custom serialization
 
@@ -76,8 +81,14 @@ interface and pass your implementation for key and/or value serialization.
 Tests are performed against [embedded-redis](https://github.com/kstyrc/embedded-redis).
 `RedisCacheTest` tests all methods for a single-argument (i.e. default serializers, no prefix
 or expiration, no loader) constructed instance.  The other test classes do what they say on the
-tin, testing custom serializers, key prefix, and expiration.  I split those out because they require
+tin, testing custom serializers & a default loader.  I split those out because they require
 constructing a different RedisCache instance, and only need to test a subset of methods.
+
+# TODO
+
+- Smarter GetAll
+- Transactions for multi-host support?
+- Eviction support from LoadingCache?
 
 # See also
 

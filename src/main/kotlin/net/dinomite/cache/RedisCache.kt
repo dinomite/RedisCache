@@ -3,7 +3,6 @@ package net.dinomite.cache
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.cache.AbstractLoadingCache
 import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.google.common.primitives.Bytes
@@ -18,12 +17,12 @@ class RedisCache<K, V>
 @JvmOverloads constructor(val jedisPool: JedisPool,
                           val keySerializer: Serializer = ObjectStreamSerializer(),
                           val valueSerializer: Serializer = ObjectStreamSerializer(),
-                          val keyPrefix: ByteArray? = null,
-                          expiration: Duration? = null,
+                          val keyPrefix: ByteArray = "redis-cache:".toByteArray(),
+                          expiration: Duration = Duration.ofHours(1),
                           val loader: CacheLoader<K, V>? = null)
-    : AbstractLoadingCache<K, V>(), LoadingCache<K, V> {
+    : AbstractLoadingCache<K, V>() {
 
-    val expiration: Int? = expiration?.seconds?.toInt()
+    val expiration: Int? = expiration.seconds.toInt()
 
     override fun getIfPresent(key: Any): V? {
         jedisPool.resource.use { jedis ->
@@ -145,10 +144,6 @@ class RedisCache<K, V>
 
     @VisibleForTesting
     fun buildKey(key: Any?): ByteArray {
-        if (keyPrefix == null) {
-            return keySerializer.serialize(key)
-        } else {
-            return Bytes.concat(keyPrefix, keySerializer.serialize(key))
-        }
+        return Bytes.concat(keyPrefix, keySerializer.serialize(key))
     }
 }

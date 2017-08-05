@@ -1,12 +1,15 @@
 package net.dinomite.cache
 
 import com.google.common.cache.CacheLoader
+import com.google.common.primitives.Bytes
+import net.dinomite.cache.serializers.ObjectStreamSerializer
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import redis.clients.jedis.JedisPool
 import redis.embedded.RedisServer
+import java.time.Duration
 import java.util.*
 
 class RedisCacheTest {
@@ -15,6 +18,9 @@ class RedisCacheTest {
     val jedisPool = JedisPool("localhost", port)
 
     lateinit var redisCache: RedisCache<String, String>
+
+    val prefix = "redis-cache:".toByteArray()
+    val serializer = ObjectStreamSerializer()
 
     @Before
     fun setup() {
@@ -101,6 +107,30 @@ class RedisCacheTest {
     }
 
     @Test
+    fun testPut_UsesPrefix() {
+        val key = "foobar"
+        val value = "foovalue"
+        redisCache.put(key, value)
+
+        jedisPool.resource.use { jedis ->
+            val serializedKey = Bytes.concat(prefix, serializer.serialize(key))
+            val serializedValue = serializer.serialize(value)
+            assertTrue(Arrays.equals(serializedValue, jedis.get(serializedKey)))
+        }
+    }
+
+    @Test
+    fun testPut_SetsExpiration() {
+        val key = "foobar"
+        val value = "foovalue"
+        redisCache.put(key, value)
+
+        jedisPool.resource.use { jedis ->
+            assertEquals(Duration.ofHours(1).seconds, jedis.ttl(redisCache.buildKey(key)))
+        }
+    }
+
+    @Test
     fun testPutAll() {
         val firstKey = "foo"
         val firstValue = "bar"
@@ -160,9 +190,10 @@ class RedisCacheTest {
     }
 
     @Test
-    fun testBuildKey() {
-        val expected = byteArrayOf(-84, -19, 0, 5, 116, 0, 6, 102, 111, 111, 98, 97, 114)
-        val actual = redisCache.buildKey("foobar")
+    fun testBuildKey_IncludesPrefix() {
+        val key = "foobar"
+        val expected = Bytes.concat(prefix, serializer.serialize(key))
+        val actual = redisCache.buildKey(key)
         assertTrue(Arrays.equals(expected, actual))
     }
 }
