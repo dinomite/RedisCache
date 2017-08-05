@@ -51,17 +51,4 @@ class RedisCacheTest_WithSerializers {
 
         assertEquals(value, redisCache.get(key, { value }))
     }
-
-    @Test
-    fun testPut_UsesPrefix() {
-        val key = "foobar"
-        val value = "foovalue"
-        redisCache.put(key, value)
-
-        jedisPool.resource.use { jedis ->
-            val serializedKey = serializer.serialize(key)
-            val serializedValue = serializer.serialize(value)
-            assertTrue(Arrays.equals(serializedValue, jedis.get(serializedKey)))
-        }
-    }
 }
