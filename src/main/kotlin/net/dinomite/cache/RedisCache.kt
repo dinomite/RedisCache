@@ -3,6 +3,7 @@ package net.dinomite.cache
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.cache.AbstractLoadingCache
 import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Iterables
 import com.google.common.primitives.Bytes
@@ -27,7 +28,7 @@ class RedisCache<K, V>
                           val keyPrefix: ByteArray = "redis-cache:".toByteArray(),
                           expiration: Duration = Duration.ofHours(1),
                           val loader: CacheLoader<K, V>? = null)
-    : AbstractLoadingCache<K, V>() {
+    : AbstractLoadingCache<K, V>(), LoadingCache<K, V> {
 
     val expiration: Int? = expiration.seconds.toInt()
 
