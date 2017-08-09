@@ -79,8 +79,8 @@ bintray {
     pkg {
         repo = 'maven'
         licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/dinomite/guava-cache-redis'
-        name = 'net.dinomite:guava-cache-redis'
+        vcsUrl = 'https://github.com/dinomite/RedisCache'
+        name = 'net.dinomite:redis-cache'
 
         version {
             name = project.version

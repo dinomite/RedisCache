@@ -1,4 +1,4 @@
-# guava-cache-redis
+# RedisCache
 
 A [Guava LoadingCache](https://google.github.io/guava/releases/22.0/api/docs/com/google/common/cache/LoadingCache.html)
 backed by Redis.
@@ -13,17 +13,17 @@ Additionally, I encourage anyone who uses Java to give Kotlin a try—it's bette
 
 # Dependency
 
-Find the latest version from the [repository page on Bintray](https://bintray.com/dinomite/maven/net.dinomite%3Aguava-cache-redis).
+Find the latest version from the [repository page on Bintray](https://bintray.com/dinomite/maven/net.dinomite%3Aredis-cache).
 
 Use that version number to add the dependency to your `build.gradle`:
 
-    compile 'net.dinomite:guava-cache-redis:[latest_version]'
+    compile 'net.dinomite:redis-cache:[latest_version]'
 
 Or `pom.xml`, if you use Maven:
 
     <dependency>
       <groupId>net.dinomite</groupId>
-      <artifactId>guava-cache-redis</artifactId>
+      <artifactId>redis-cache</artifactId>
       <version>[latest_version]</version>
     </dependency>
 
