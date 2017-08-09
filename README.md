@@ -87,7 +87,9 @@ constructing a different RedisCache instance, and only need to test a subset of 
 # TODO
 
 - Smarter GetAll
+- Refresh TTL on access
 - Transactions for multi-host support?
+- Implement LRU eviction
 
 # See also
 
