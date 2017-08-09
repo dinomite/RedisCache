@@ -22,15 +22,15 @@ import java.util.concurrent.Callable
  *     redisCache.put("foo", { generateValue(String) })
  */
 class RedisCache<K, V>
-@JvmOverloads constructor(val jedisPool: JedisPool,
-                          val keySerializer: Serializer = ObjectStreamSerializer(),
-                          val valueSerializer: Serializer = ObjectStreamSerializer(),
-                          val keyPrefix: ByteArray = "redis-cache:".toByteArray(),
+@JvmOverloads constructor(private val jedisPool: JedisPool,
+                          private val keySerializer: Serializer = ObjectStreamSerializer(),
+                          private val valueSerializer: Serializer = ObjectStreamSerializer(),
+                          private val keyPrefix: ByteArray = "redis-cache:".toByteArray(),
                           expiration: Duration = Duration.ofHours(1),
-                          val loader: CacheLoader<K, V>? = null)
+                          private val loader: CacheLoader<K, V>? = null)
     : AbstractLoadingCache<K, V>(), LoadingCache<K, V> {
 
-    val expiration: Int? = expiration.seconds.toInt()
+    private val expiration: Int? = expiration.seconds.toInt()
 
     override fun getIfPresent(key: Any): V? {
         jedisPool.resource.use { jedis ->
@@ -151,7 +151,5 @@ class RedisCache<K, V>
     }
 
     @VisibleForTesting
-    fun buildKey(key: Any?): ByteArray {
-        return Bytes.concat(keyPrefix, keySerializer.serialize(key))
-    }
+    internal fun buildKey(key: Any?): ByteArray = Bytes.concat(keyPrefix, keySerializer.serialize(key))
 }
