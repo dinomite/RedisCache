@@ -70,7 +70,7 @@ class RedisCacheTest {
             redisCache.get(key, { null })
             fail("Expected CacheLoader.InvalidCacheLoadException")
         } catch (e: CacheLoader.InvalidCacheLoadException) {
-            // Expected
+            assertEquals("Loader must not return null, key=foobar", e.message)
         }
     }
 

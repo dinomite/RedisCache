@@ -35,10 +35,10 @@ class RedisCache<K, V>
     override fun getIfPresent(key: Any): V? {
         jedisPool.resource.use { jedis ->
             val reply = jedis.get(buildKey(key))
-            if (reply == null) {
-                return null
+            return if (reply == null) {
+                null
             } else {
-                return valueSerializer.deserialize(reply)
+                valueSerializer.deserialize(reply)
             }
         }
     }
@@ -150,6 +150,12 @@ class RedisCache<K, V>
         this.put(key, loader.load(key))
     }
 
+    /**
+     * Serialize the given key & add the prefix
+     */
     @VisibleForTesting
-    internal fun buildKey(key: Any?): ByteArray = Bytes.concat(keyPrefix, keySerializer.serialize(key))
+    internal fun buildKey(key: Any?): ByteArray {
+        checkNotNull(key) { "Key cannot be null" }
+        return Bytes.concat(keyPrefix, keySerializer.serialize(key))
+    }
 }
