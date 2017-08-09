@@ -9,7 +9,9 @@ import com.google.common.collect.Iterables
 import com.google.common.primitives.Bytes
 import net.dinomite.cache.serializers.ObjectStreamSerializer
 import net.dinomite.cache.serializers.Serializer
+import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
+import redis.clients.jedis.Pipeline
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.Callable
@@ -27,15 +29,16 @@ class RedisCache<K, V>
                           private val valueSerializer: Serializer = ObjectStreamSerializer(),
                           private val keyPrefix: ByteArray = "redis-cache:".toByteArray(),
                           expiration: Duration = Duration.ofHours(1),
-                          private val loader: CacheLoader<K, V>? = null)
+                          private val loader: CacheLoader<K, V>? = null,
+                          private val expireAfterRead: Boolean = false)
     : AbstractLoadingCache<K, V>(), LoadingCache<K, V> {
 
     private val expiration: Int? = expiration.seconds.toInt()
 
     override fun getIfPresent(key: Any): V? {
-        jedisPool.resource.use { jedis ->
+        return jedis { jedis ->
             val reply = jedis.get(buildKey(key))
-            return if (reply == null) {
+            if (reply == null) {
                 null
             } else {
                 valueSerializer.deserialize(reply)
@@ -62,16 +65,17 @@ class RedisCache<K, V>
     override fun getAllPresent(keys: Iterable<Any?>): ImmutableMap<K, V> {
         val keyBytes = keys.map { buildKey(it) }
 
-        jedisPool.resource.use { jedis ->
+        return jedis { jedis ->
             val valueBytes = jedis.mget(*Iterables.toArray(keyBytes, ByteArray::class.java))
 
             val result = LinkedHashMap<K, V>()
             keys.map { it as K }.forEachIndexed { i, castKey ->
                 if (valueBytes[i] != null) {
-                    result.put(castKey, valueSerializer.deserialize<V>(valueBytes[i]))
+                    result.put(castKey, valueSerializer.deserialize(valueBytes[i]))
                 }
             }
-            return ImmutableMap.copyOf(result)
+
+            ImmutableMap.copyOf(result)
         }
     }
 
@@ -84,7 +88,7 @@ class RedisCache<K, V>
         val keyBytes = buildKey(key)
         val valueBytes = valueSerializer.serialize(value)
 
-        jedisPool.resource.use { jedis ->
+        jedis { jedis ->
             if (expiration != null) {
                 jedis.setex(keyBytes, expiration, valueBytes)
             } else {
@@ -101,7 +105,7 @@ class RedisCache<K, V>
             keysAndValues.add(valueSerializer.serialize(value))
         }
 
-        jedisPool.resource.use { jedis ->
+        jedis { jedis ->
             if (expiration != null) {
                 jedis.pipelined().use { pipeline ->
                     pipeline.mset(*Iterables.toArray(keysAndValues, ByteArray::class.java))
@@ -121,7 +125,7 @@ class RedisCache<K, V>
     }
 
     override fun invalidate(key: Any?) {
-        jedisPool.resource.use { jedis ->
+        jedis { jedis ->
             jedis.del(buildKey(key))
         }
     }
@@ -129,7 +133,7 @@ class RedisCache<K, V>
     override fun invalidateAll(keys: Iterable<*>) {
         val keyBytes = keys.map { buildKey(it) }
 
-        jedisPool.resource.use { jedis ->
+        jedis { jedis ->
             jedis.del(*Iterables.toArray(keyBytes, ByteArray::class.java))
         }
     }
@@ -157,5 +161,17 @@ class RedisCache<K, V>
     internal fun buildKey(key: Any?): ByteArray {
         checkNotNull(key) { "Key cannot be null" }
         return Bytes.concat(keyPrefix, keySerializer.serialize(key))
+    }
+
+    private fun <T> jedis(body: (jedis: Jedis) -> T): T = jedisPool.resource.use { body(it) }
+
+    private fun <T> pipeline(body: (pipeline: Pipeline) -> T): T {
+        jedisPool.resource.use {
+            it.pipelined().use {
+                val ret = body(it)
+                it.sync()
+                return ret
+            }
+        }
     }
 }

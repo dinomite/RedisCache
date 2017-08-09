@@ -35,7 +35,7 @@ class RedisCacheTest {
     }
 
     @Test
-    fun testGetIfPresent_NullForNonExistantKey() {
+    fun testGetIfPresent_NullForNonExistentKey() {
         val key = "foobar"
         assertNull(redisCache.getIfPresent(key))
     }
