@@ -48,9 +48,20 @@ desired.
 
 By default RedisCache uses the prefix 'redis-cache:'.
 
-RedisCache sets TTL to 1 hour by default—no automatic eviction is performed so **you probably want a
-different value**.  Pass the `expiration` parameter to set the TTL for all RedisCache-inserted
-objects.
+RedisCache sets the TTL for values inserted into Redis to 1 hour by default—no other automatic
+eviction is performed so **you probably want a different value**.  This is akin to `CacheBuilder`'s
+[`expireAfterWrite`](https://github.com/google/guava/wiki/CachesExplained#timed-eviction) setting.
+Pass the `expiration` parameter to set the TTL for all RedisCache-inserted objects.
+
+## Expire after read
+
+RedisCache can renew the TTL of values on each read if you set `expireAfterRead` to true:
+
+    val redisCache = RedisCache<String, String>(jedisPool, expireAfterRead = true)
+    // Every retrieval will update the value's TTL to the value of `expiration`
+
+This mode is akin to `CacheBuilder`'s
+[`expireAfterRead`](https://github.com/google/guava/wiki/CachesExplained#timed-eviction) setting.
 
 ## Custom serialization
 
@@ -87,9 +98,9 @@ constructing a different RedisCache instance, and only need to test a subset of 
 # TODO
 
 - Smarter GetAll
-- Refresh TTL on access
 - Transactions for multi-host support?
 - Implement LRU eviction
+- SHA key serializer
 
 # See also
 
