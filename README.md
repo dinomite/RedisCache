@@ -97,9 +97,9 @@ constructing a different RedisCache instance, and only need to test a subset of 
 
 # TODO
 
+- Implement LRU eviction
 - Smarter GetAll
 - Transactions for multi-host support?
-- Implement LRU eviction
 - SHA key serializer
 
 # See also

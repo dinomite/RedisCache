@@ -12,6 +12,7 @@ import net.dinomite.cache.serializers.Serializer
 import redis.clients.jedis.Jedis
 import redis.clients.jedis.JedisPool
 import redis.clients.jedis.Pipeline
+import redis.clients.jedis.ScanParams
 import java.time.Duration
 import java.util.*
 import java.util.concurrent.Callable
@@ -32,8 +33,9 @@ class RedisCache<K, V>
                           private val valueSerializer: Serializer = ObjectStreamSerializer(),
                           private val keyPrefix: ByteArray = "redis-cache:".toByteArray(),
                           expiration: Duration = Duration.ofHours(1),
+                          private val expireAfterRead: Boolean = false,
                           private val loader: CacheLoader<K, V>? = null,
-                          private val expireAfterRead: Boolean = false)
+                          private val database: Int? = null)
     : AbstractLoadingCache<K, V>(), LoadingCache<K, V> {
 
     private val expiration: Int = expiration.seconds.toInt()
@@ -143,6 +145,20 @@ class RedisCache<K, V>
         }
     }
 
+    /**
+     * If we're in our own database, flush it because that's faster.  Otherwise, iterate
+     */
+    override fun invalidateAll() {
+        if (database != null) {
+            jedis { it.flushDB() }
+        } else {
+            val scanResult = jedis { it.scan("0", ScanParams().match(buildKey("*"))) }
+            pipeline { p ->
+                scanResult.result.forEach { p.del(it) }
+            }
+        }
+    }
+
     override fun get(key: K): V {
         if (loader == null) {
             throw IllegalStateException("Cannot use single-argument get with null loader (provide one Cache construction)")
@@ -168,10 +184,15 @@ class RedisCache<K, V>
         return Bytes.concat(keyPrefix, keySerializer.serialize(key))
     }
 
-    private fun <T> jedis(body: (jedis: Jedis) -> T): T = jedisPool.resource.use { body(it) }
-
-    private fun pipeline(body: (pipeline: Pipeline) -> Unit) {
+    private inline fun <T> jedis(body: (jedis: Jedis) -> T): T {
         jedisPool.resource.use {
+            if (database != null) it.select(database)
+            return body(it)
+        }
+    }
+
+    private inline fun pipeline(body: (pipeline: Pipeline) -> Unit) {
+        jedis {
             it.pipelined().use {
                 body(it)
                 it.sync()
