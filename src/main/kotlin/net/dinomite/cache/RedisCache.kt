@@ -24,8 +24,20 @@ import java.util.concurrent.Callable
  *     val redisCache = RedisCache<String, String>(jedisPool)
  *     redisCache.put("foo", { generateValue(String) })
  *
- * All keys are inserted with a expiration (1 hour unless specified) and prefix (the byte array representation of
- * "redis-cache:").  Setting `expireAfterRead` will refresh each key's expiration upon read.
+ * All keys are inserted with a expiration (1 hour unless specified) and prefix (the byte array
+ * representation of "redis-cache:").  Setting `expireAfterRead` will refresh each key's expiration
+ * upon read.
+ *
+ * @param jedisPool
+ * @param keySerializer
+ * @param valueSerializer
+ * @param keyPrefix Prefix for keys in Redis.  Default: the byte-array representation of "redis-cache"
+ * @param expiration Expiration set on inserted keys
+ * @param expireAfterRead Whether to update each key's expiration when it is read
+ * @param loader CacheLoader that builds requested values that don't exist in the cache
+ * @param database The Redis database to use.  **NOTE** If you specify a database, RedisCache
+ *                  assumes treats that database as it's own domain and will alter any keys
+ *                  therein (e.g. this causes invalidateAll() to call jedis.flush())
  */
 class RedisCache<K, V>
 @JvmOverloads constructor(private val jedisPool: JedisPool,
